@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>RemLocal · 文字聊天 MVP</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header>
+        <div>
+          <p class="eyebrow">LOCAL CHARACTER AGENT</p>
+          <h1>RemLocal</h1>
+          <p class="subtitle">文字聊天 MVP · 非官方同人学习项目</p>
+        </div>
+        <span id="status" class="status" aria-live="polite">后端未连接</span>
+      </header>
+
+      <section id="messages" class="messages" aria-live="polite">
+        <article class="message assistant">
+          <span class="speaker">雷姆</span>
+          <p>您好。现在是演示阶段；等本地模型接入后，我会更自然地陪您聊天。</p>
+        </article>
+      </section>
+
+      <form id="chat-form" class="composer">
+        <label class="sr-only" for="message">输入消息</label>
+        <textarea id="message" name="message" rows="2" maxlength="2000" placeholder="例如：我今天学习有点累……" required></textarea>
+        <button id="send-button" type="submit">发送</button>
+      </form>
+    </main>
+    <script src="app.js"></script>
+  </body>
+</html>

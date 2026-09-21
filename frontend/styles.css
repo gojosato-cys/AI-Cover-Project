@@ -1,0 +1,89 @@
+:root {
+  color-scheme: dark;
+  font-family: "Microsoft YaHei", system-ui, sans-serif;
+  background: #11101d;
+  color: #f5f3ff;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: radial-gradient(circle at top, #272149, #11101d 55%);
+}
+
+.app-shell {
+  width: min(760px, calc(100% - 32px));
+  min-height: 100vh;
+  margin: 0 auto;
+  padding: 40px 0 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+header { display: flex; justify-content: space-between; gap: 16px; align-items: start; }
+h1 { margin: 2px 0; font-size: 32px; }
+.eyebrow { margin: 0; color: #bba9ff; font-size: 12px; letter-spacing: 0.12em; }
+.subtitle { margin: 0; color: #c7c0dc; }
+
+.status {
+  white-space: nowrap;
+  padding: 7px 10px;
+  border-radius: 99px;
+  background: #302b45;
+  color: #d6d0e8;
+  font-size: 13px;
+}
+.status.online { background: #203c3b; color: #baf3e1; }
+
+.messages {
+  display: flex;
+  flex: 1;
+  min-height: 420px;
+  max-height: 62vh;
+  overflow-y: auto;
+  flex-direction: column;
+  gap: 14px;
+  padding: 6px;
+}
+
+.message { max-width: 82%; padding: 14px 16px; border-radius: 16px; line-height: 1.55; }
+.message p { margin: 4px 0 0; }
+.assistant { align-self: flex-start; background: #292343; }
+.user { align-self: flex-end; background: #6350a7; }
+.speaker { color: #d6caff; font-size: 12px; font-weight: 700; }
+.user .speaker { color: #eee9ff; }
+
+.composer { display: flex; align-items: end; gap: 12px; }
+textarea {
+  flex: 1;
+  resize: vertical;
+  min-height: 52px;
+  border: 1px solid #564c78;
+  border-radius: 12px;
+  padding: 12px;
+  background: #1c1930;
+  color: inherit;
+  font: inherit;
+}
+button {
+  min-height: 52px;
+  border: 0;
+  border-radius: 12px;
+  padding: 0 20px;
+  background: #a98dff;
+  color: #171126;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+button:disabled { cursor: wait; opacity: 0.65; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); }
+
+@media (max-width: 560px) {
+  .app-shell { width: min(100% - 24px, 760px); padding-top: 24px; }
+  header { flex-direction: column; }
+  .message { max-width: 94%; }
+}
