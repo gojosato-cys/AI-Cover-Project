@@ -1,0 +1,2 @@
+{"schema_version":"rem-source-v1","source_id":"rem-original-v1","name":"RemLocal 人工原创角色对话","source_type":"human_authored","location":"data/training/raw/rem-original-v1","usage_scope":"个人本地研究与作品集技术演示","status":"approved","notes":"由项目作者为 RemLocal 单独编写；后续原创人格样本使用此来源标识。"}
+{"schema_version":"rem-source-v1","source_id":"rem-curated-v1","name":"RemLocal 首批原创候选对话","source_type":"model_assisted","location":"data/training/splits","usage_scope":"个人本地研究与作品集技术演示","status":"approved","notes":"由 Codex 按 rem-persona-v1 原创并进行第一轮规则和质量复核；正式训练前由项目作者抽样复核。"}

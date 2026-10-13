@@ -1,0 +1,74 @@
+{
+  "config_version": "rem-qlora-smoke-v1",
+  "purpose": "Two-step pipeline smoke test only; not a production personality fine-tune.",
+  "execution_environment": "wsl2",
+  "project_dir": "/mnt/d/LeimuAi",
+  "base_model": {
+    "repo_id": "Qwen/Qwen2.5-7B-Instruct",
+    "base_model_revision": "a09a35458c702b33eeacc393d103063234e8bc28",
+    "local_dir": "/mnt/d/LeimuAi/data/training/models/Qwen2.5-7B-Instruct",
+    "trust_remote_code": false,
+    "use_safetensors": true
+  },
+  "dataset": {
+    "schema_version": "rem-sft-v1",
+    "train_file": "/mnt/d/LeimuAi/data/training/splits/train.jsonl",
+    "validation_file": "/mnt/d/LeimuAi/data/training/splits/validation.jsonl",
+    "test_file": "/mnt/d/LeimuAi/data/training/splits/test.jsonl",
+    "system_prompt_source": "backend.app.llm_service.LocalLLMService._system_prompt",
+    "train_on_assistant_only": true,
+    "max_sequence_length": 1024,
+    "packing": false
+  },
+  "quantization": {
+    "load_in_4bit": true,
+    "quant_type": "nf4",
+    "compute_dtype": "bfloat16",
+    "use_double_quant": true
+  },
+  "lora": {
+    "rank": 16,
+    "alpha": 32,
+    "dropout": 0.05,
+    "bias": "none",
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ]
+  },
+  "training": {
+    "seed": 42,
+    "max_steps": 2,
+    "learning_rate": 0.0001,
+    "per_device_train_batch_size": 1,
+    "per_device_eval_batch_size": 1,
+    "gradient_accumulation_steps": 4,
+    "gradient_checkpointing": true,
+    "use_cache": false,
+    "optimizer": "paged_adamw_8bit",
+    "lr_scheduler": "constant",
+    "warmup_steps": 0,
+    "bf16": true,
+    "fp16": false,
+    "logging_steps": 1,
+    "eval_steps": 1,
+    "save_steps": 1,
+    "save_total_limit": 2,
+    "report_to": "none"
+  },
+  "output": {
+    "adapter_dir": "/mnt/d/LeimuAi/data/training/checkpoints/rem-qlora-smoke-v1",
+    "cache_dir": "/mnt/d/LeimuAi/data/training/cache"
+  },
+  "guards": {
+    "require_pinned_base_revision": true,
+    "minimum_train_samples_for_full_run": 300,
+    "stop_llama_server_before_training": true,
+    "exclude_test_split_from_training": true
+  }
+}

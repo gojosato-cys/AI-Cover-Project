@@ -1,0 +1,63 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "rem_sft_v1.schema.json",
+  "title": "RemLocal SFT conversation v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "id",
+    "source_id",
+    "group_id",
+    "split",
+    "category",
+    "language",
+    "messages",
+    "quality"
+  ],
+  "properties": {
+    "schema_version": {"const": "rem-sft-v1"},
+    "id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{2,63}$"},
+    "source_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{2,63}$"},
+    "group_id": {"type": "string", "pattern": "^[a-z0-9][a-z0-9_-]{2,63}$"},
+    "split": {"enum": ["train", "validation", "test"]},
+    "category": {
+      "enum": [
+        "persona",
+        "casual",
+        "emotion",
+        "help",
+        "planning",
+        "boundary",
+        "truthfulness",
+        "safety",
+        "security",
+        "format"
+      ]
+    },
+    "language": {"const": "zh-CN"},
+    "messages": {
+      "type": "array",
+      "minItems": 2,
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "required": ["role", "content"],
+        "properties": {
+          "role": {"enum": ["system", "user", "assistant"]},
+          "content": {"type": "string", "minLength": 1, "maxLength": 8000}
+        }
+      }
+    },
+    "quality": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["status", "reviewer", "notes"],
+      "properties": {
+        "status": {"const": "approved"},
+        "reviewer": {"type": "string", "minLength": 1, "maxLength": 100},
+        "notes": {"type": "string", "maxLength": 1000}
+      }
+    }
+  }
+}

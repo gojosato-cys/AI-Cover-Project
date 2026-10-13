@@ -3,7 +3,6 @@
 __pycache__/
 *.py[cod]
 .env
-data/
 
 # Local tooling and build output
 .pytest_cache/
@@ -13,3 +12,13 @@ node_modules/
 Thumbs.db
 
 data/eval-results/
+data/training/raw/**
+!data/training/raw/.gitkeep
+data/training/processed/**
+!data/training/processed/.gitkeep
+data/training/splits/*.jsonl
+data/training/reports/**
+!data/training/reports/.gitkeep
+data/training/checkpoints/
+data/training/models/
+data/training/cache/
