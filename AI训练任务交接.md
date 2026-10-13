@@ -1,61 +1,268 @@
-# AI 训练任务交接
+# RemLocal / Soul-of-Waifu 项目交接
 
-- 原始更新时间：2026-09-27
-- 项目：RemLocal 本地角色人格聊天 MVP
+- 交接日期：2026-10-13
+- 当前分支：`feature/local-llm`
+- 已完成功能提交：`251a050 feat: 融合 Soul-of-Waifu 文本流式链路`
+- 远端仓库：`https://github.com/gojosato-cys/AI-Cover-Project.git`
+- 当前阶段：里程碑 1A 已完成，准备进入里程碑 1B
 
-> 文档状态：下方内容是 2026-09-27 的历史交接快照。2026-10-13 已补齐自动质量评测、训练数据规范、固定基础模型与 QLoRA 环境验证，并完成 Soul-of-Waifu v2.4.7 的纯文本流式接入；尚未执行正式微调，也未启用完整语音模型。当前路线与验收状态以 `docs/soul-of-waifu-integration-roadmap.md` 为准。
+## 一句话结论
 
-## 2026-10-13 更新
+项目已经形成一条可用的本地纯文本链路：Soul-of-Waifu 负责 GUI、角色上下文和会话体验，RemLocal 负责最高优先级的人格、任务和安全路由，llama.cpp 负责 Qwen2.5-7B 本地推理；多轮、双角色上下文和真正逐 token 流式均已验证。正式人格微调和完整语音链路尚未开始。
 
-- RemLocal 已提供 `/v1/models` 与 `/v1/chat/completions`，保留 Soul 多轮和多角色上下文，并在模型前执行人格、任务和危机安全路由。
-- llama.cpp SSE 已逐 token 透传；Soul 原生 `OpenAIProvider` 的多轮、双角色上下文、人格规则、安全路由和真实流式检查全部通过。
-- Soul GUI 可稳定启动；测试期间 Hugging Face 缓存保持 0 字节，没有下载或加载 TTS、Whisper、RVC 模型。
-- 自动测试 `53/53` 通过；固定评测在 `LLM_TEMPERATURE=0` 时为 HTTP `12/12`、自动规则 `37/37`、整例 `12/12`。
-- 下一阶段先完成上下文裁剪、取消生成、超时与工具白名单，再统一 Soul 角色资产；正式 QLoRA 仍需至少 300 条独立、复核合格且与评测隔离的训练场景。
+## 架构与边界
 
-## 2026-09-27 历史快照
+```text
+Soul-of-Waifu v2.4.7
+  GUI / 角色卡 / Lorebook / 会话历史
+                   |
+                   | OpenAI-compatible HTTP + SSE
+                   v
+RemLocal FastAPI   http://127.0.0.1:8000/v1
+  安全路由 -> 人格规则 -> 任务规则 -> 上下文适配
+                   |
+                   v
+llama.cpp          http://127.0.0.1:8080/v1
+  Qwen2.5-7B-Instruct Q4_K_M
+```
 
-## 当前结论
+边界约定：
 
-仓库已接入本地模型推理，但尚未实现或执行模型训练/微调。当前优先建议补齐训练数据规范和可靠评测基线，再根据评测结果决定是否需要 LoRA 微调。
+- Soul-of-Waifu 保持在独立目录，通过 HTTP 集成，不复制其 GPL-3.0 源码到本仓库。
+- Soul 不应直连 llama.cpp，否则会绕过 RemLocal 的确定性安全和任务路由。
+- 模型、训练数据、缓存、日志和检查点放在 D 盘，不提交 Git。
+- 当前阶段只验收文本链路，不同时加载完整 TTS、Whisper 或 RVC 模型。
 
-## 已完成
+## 关键目录与版本
 
-- 前端提供本地文字聊天界面，调用 `http://127.0.0.1:8000`。
-- FastAPI 提供 `/api/health`、`/api/persona` 和 `/api/chat`。
-- `backend/app/llm_service.py` 可通过 OpenAI 兼容接口调用本地 llama.cpp，并读取环境变量配置模型、超时、温度、最大生成长度和失败回退行为。
-- `backend/app/persona.py` 定义雷姆的人格说明和安全边界；模型不可用或被配置为规则模式时，聊天 API 使用演示回复回退。
-- `scripts/start_llama_server.ps1` 和 `scripts/stop_llama_server.ps1` 提供本机推理服务的启动与停止脚本，运行文件、模型和日志配置在 D 盘。
-- `tests/eval_cases/rem_v1.jsonl` 有 12 条固定评测用例，覆盖人格、求助、事实边界、安全和格式等场景；`scripts/run_evaluation.py` 可调用运行中的 API 并将结果保存到 `data/eval-results/`。
-- 本机检查发现 `D:\llama.cpp\b11093\llama-server.exe` 和 `D:\llama.cpp\models\Qwen2.5-7B-Instruct-Q4_K_M.gguf` 存在；检查时 8080 端口的模型服务未响应。因此只能确认文件存在，不能确认当前推理服务可用或评测已通过。
+| 项目 | 位置或版本 |
+| --- | --- |
+| RemLocal 仓库 | `D:\LeimuAi` |
+| Soul 官方 Release | `D:\Soul-of-Waifu-app`，v2.4.7 |
+| Soul 上游源码核验目录 | `D:\Soul-of-Waifu` |
+| Soul 上游核验提交 | `747048b3b3ad7d321a667630018f7ffc04eb5f6d` |
+| Soul 下载与缓存 | `D:\Soul-of-Waifu-runtime` |
+| llama.cpp | `D:\llama.cpp\b11093\llama-server.exe` |
+| 当前推理模型 | `D:\llama.cpp\models\Qwen2.5-7B-Instruct-Q4_K_M.gguf` |
+| 可训练基础权重 | `D:\LeimuAi\data\training\models\Qwen2.5-7B-Instruct` |
+| QLoRA WSL 环境 | `/home/gojosato/.venvs/remlocal-qlora` |
 
-## 尚未完成
+推理模型和可训练权重的 SHA-256、大小、固定 revision 见 `data/training/manifests/model_v1.json`。
 
-- 仓库没有训练/微调脚本、训练配置、已整理的数据集或训练产物；目前不是“已训练好的 RemLocal 模型”。
-- 现有 12 条用例的 `expect` 是人工描述；评测脚本只统计 HTTP 成功数和响应耗时，不会自动判断回答是否满足预期，也没有已核验的评测报告。
-- `/api/chat` 每次只把当前用户消息和系统提示发给模型，没有多轮上下文或长期记忆。
-- 现有 GGUF Q4_K_M 文件是面向推理的量化模型文件；不能据此推断它适合作为微调输入。训练前需核实对应基础模型版本、权重格式、许可证和硬件要求。
-- 尚未配置持续集成、模型版本登记、训练产物发布或部署流程。
+## 已完成内容
 
-## 建议的后续步骤
+### 1. 本地推理与兼容网关
 
-1. **明确训练目标和验收标准。** 先确定要改善的是语气一致性、任务能力还是安全表现。若只是稳定角色语气，先尝试完善系统提示词和评测，不必立即训练。
-2. **整理合规数据。** 只使用有权使用的数据；去重、清理低质量样本、移除个人信息，并记录来源及许可。统一成训练工具支持的 JSONL 格式，按对话或来源切分训练集、验证集和测试集，避免同一对话泄漏到不同集合。
-3. **建立可比较的基线。** 在当前模型和规则配置上运行固定用例。给人格、帮助质量、事实边界、隐私、安全和格式定义可检查的标准，并加入人工抽样复核。记录模型文件、参数、代码版本、日期和结果。
-4. **确认训练方案与资源。** 核实目标基础模型及其可训练权重格式、许可证、显存和磁盘需求，再选择 LoRA/QLoRA 工具链。当前的量化 GGUF 可继续用于推理基线，但应先确认是否需要另行准备训练权重。
-5. **执行可复现的小规模实验。** 固定并记录数据版本、随机种子、训练参数、基础模型版本和检查点位置；保留未参与训练的测试集。模型、数据副本、日志和检查点统一放在 D 盘。
-6. **比较并决定是否交付。** 用同一测试集比较微调前后效果，检查安全回归和过拟合；未达到预先约定的改进标准就不替换现有模型。通过后再合并适配器、转换/量化为 llama.cpp 支持的格式，并以新文件名部署和回归测试。
+- `/api/health`、`/api/persona`、`/api/chat` 可供原有前端使用。
+- `/v1/models`、`/v1/chat/completions` 可供 Soul 的标准 OpenAI 客户端使用。
+- Soul 发送的 system、user、assistant 历史消息会完整保留。
+- RemLocal 系统策略始终放在 Soul 角色上下文之前。
+- llama.cpp 的 SSE `delta.content` 已逐块解析并立即透传，不再等待完整回复。
+- 模型不可用时仍保留规则回退；可通过环境变量关闭回退以暴露故障。
 
-### 建议的第一个里程碑
+主要代码：
 
-先完成数据来源与许可清单、训练/验证/测试集规范，以及能检查回答质量而不只检查 HTTP 状态的基线评测报告。完成这一里程碑前，不建议下载新的大模型或启动正式训练。
+- `backend/app/main.py`：API、OpenAI 兼容响应和 SSE 输出。
+- `backend/app/llm_service.py`：上下文合并、llama.cpp 调用和流解析。
 
-## 相关文件
+### 2. 人格、任务和安全路由
 
-- API：`backend/app/main.py`
-- 本地推理适配：`backend/app/llm_service.py`
-- 人格和规则回退：`backend/app/persona.py`
-- llama.cpp 启停：`scripts/start_llama_server.ps1`、`scripts/stop_llama_server.ps1`
-- 评测用例：`tests/eval_cases/rem_v1.jsonl`
-- 评测运行器：`scripts/run_evaluation.py`
-- 运行与环境配置说明：`README.md`、`.env.example`
+- `rem-persona-v1`：版本化雷姆人格、语气、边界和任务原则。
+- `persona-introduction-v1`：身份询问走稳定的两句自我介绍。
+- `three-day-study-plan-v1`：三天备考请求先给方案，再询问必要信息。
+- `self-harm-crisis-v1`：直接自伤意图绕过模型，优先给现实安全步骤。
+
+主要代码：
+
+- `backend/app/persona.py`
+- `backend/app/planning.py`
+- `backend/app/safety.py`
+
+### 3. Soul-of-Waifu 接入
+
+Soul 当前配置：
+
+- Conversation Method：`Open AI`
+- Base URL：`http://127.0.0.1:8000/v1`
+- Model：`RemLocal`
+- API Key：可留空，provider 会使用 `no-key-required`
+- Soul Memory：关闭
+- Auto Summary：关闭
+
+已使用 Soul 自带环境中的原生 `AIFactory/OpenAIProvider` 验证：
+
+- 多轮历史能返回上一轮暗号。
+- 两份 system 上下文能保持不同角色代号。
+- 人格规则和危机安全路由可从 Soul 调用路径触发。
+- 普通模型回复产生多个独立增量块，确认是真流式。
+- GUI 能打开并保持响应；测试前后 Hugging Face 缓存均为 0 字节。
+
+注意：仓库内 `tests/test_soul_integration.py` 自动验证协议、上下文、安全路由和分块逻辑；Soul 官方安装环境的原生 provider/GUI 检查目前仍是人工冒烟测试，尚未脚本化。
+
+### 4. 质量评测
+
+- `tests/eval_cases/rem_v2.jsonl`：12 条固定用例、37 条透明规则。
+- `scripts/run_evaluation.py`：记录用例、评测器、服务代码指纹、Git 状态和模型公开配置。
+- 评测报告写入 `data/eval-results/`，该目录已被 Git 忽略。
+- 2026-10-13 在 `LLM_TEMPERATURE=0` 下的结果：HTTP `12/12`、规则 `37/37`、整例 `12/12`。
+- `LLM_TEMPERATURE=0.7` 曾出现 `34/37`、`9/12`，说明对比基线必须固定温度 0；日常聊天仍可使用默认 0.7。
+
+自动规则通过不等于最终质量验收，语气、自然度和建议质量仍需人工复核。
+
+### 5. 微调准备
+
+- 已建立训练数据 Schema、来源清单、去重和跨集合泄漏校验。
+- 已固定 `Qwen/Qwen2.5-7B-Instruct` revision：`a09a35458c702b33eeacc393d103063234e8bc28`。
+- 可训练 safetensors 权重已下载到 D 盘并完成分片校验。
+- WSL2 QLoRA 环境已通过 CUDA、BF16 和 bitsandbytes NF4 轻量检查。
+- 已有 `max_steps=2` 的低显存试跑配置，但没有训练入口脚本，尚未加载 7B 基础模型或开始训练。
+- 当前只有约 24 条种子样本，不足以支撑正式人格微调。
+
+## 已通过的验证
+
+在功能提交 `251a050` 上：
+
+- 标准库单元测试：`53/53` 通过。
+- Python 模块编译检查通过。
+- Soul 原生 provider 五项端到端断言通过。
+- Soul GUI 启动成功，窗口响应正常。
+- 固定温度 0 在线评测：`12/12` 用例、`37/37` 规则通过。
+- Git 敏感信息扫描未发现高置信度凭据。
+- 待提交文件中没有超过 1 MiB 的文件，模型与缓存均被忽略。
+
+当前交接时服务未运行，`8000`、`8080` 均未监听，Soul GUI 也未启动。这是运行状态，不是测试失败。
+
+## 启动与复验
+
+### 1. 启动 llama.cpp
+
+```powershell
+cd D:\LeimuAi
+.\scripts\start_llama_server.ps1
+Invoke-RestMethod http://127.0.0.1:8080/health
+```
+
+### 2. 启动 RemLocal
+
+日常聊天：
+
+```powershell
+cd D:\LeimuAi
+.\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+```
+
+固定质量评测需要在启动前设置温度 0：
+
+```powershell
+cd D:\LeimuAi
+$env:LLM_TEMPERATURE = '0'
+.\.venv\Scripts\python.exe -m uvicorn backend.app.main:app --host 127.0.0.1 --port 8000
+```
+
+健康检查：
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8000/api/health
+```
+
+### 3. 运行自动测试
+
+项目虚拟环境没有安装 pytest，使用标准库 unittest：
+
+```powershell
+cd D:\LeimuAi
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+```
+
+### 4. 运行固定评测
+
+```powershell
+cd D:\LeimuAi
+.\.venv\Scripts\python.exe .\scripts\run_evaluation.py --base-url http://127.0.0.1:8000
+```
+
+### 5. 启动 Soul GUI
+
+确认 8000 和 8080 健康后运行：
+
+```powershell
+cd D:\Soul-of-Waifu-app
+.\app\data\envs\sow\python.exe .\main.py
+```
+
+不要在本阶段打开 TTS、Whisper、RVC 或自动记忆下载项。
+
+## 已知限制与非阻塞警告
+
+- Soul 环境未安装 SoX；这只影响音频能力，不影响文本聊天。
+- Soul 的 GitHub 更新检查曾返回 403，不影响本地运行。
+- Soul 环境存在若干上游语音/RVC 依赖告警：`fairseq/cython`、`ffmpeg-python/future`、spaCy 模型版本、`rvc-python/numpy`。不要为了文本阶段盲目降级 numpy。
+- 当前没有上下文裁剪策略，长会话可能超过 llama.cpp 的 4096 context。
+- 客户端断开还不会可靠取消上游 llama.cpp 生成。
+- 工具调用没有明确白名单和审批边界。
+- Soul 原生 provider 冒烟测试尚未成为仓库内可重复脚本。
+- Soul Memory 和 Auto Summary 暂时关闭，长期记忆尚未验收。
+- 当前模型仍是通用 Qwen2.5-7B-Instruct，不是已完成微调的 Rem 模型。
+
+## 下一步执行顺序
+
+### P0：完成会话工程里程碑 1B
+
+1. 为 system 和历史消息设定 token/消息数上限，并实现可测试的裁剪策略；必须保留 RemLocal 安全提示和最近对话。
+2. 将 HTTP 客户端断开传递到上游流，支持取消生成并确认连接、线程和响应对象被释放。
+3. 明确超时、llama.cpp 中断和半途中断时的 SSE 错误/结束语义。
+4. 定义 Soul 工具调用白名单；默认拒绝文件、Shell、网络和外部副作用工具。
+5. 把 Soul 原生 provider 五项冒烟测试整理成脚本，输出明确的通过/失败结果，不依赖语音模型。
+
+验收：长对话裁剪、中断生成、超时、规则优先级和工具边界均有自动测试；原 `53` 项及 `rem_v2` 基线无回归。
+
+### P1：统一雷姆角色资产
+
+1. 建立版本化 Soul 角色卡、Lorebook 和示例对话，记录版本与来源。
+2. 避免在 Soul 角色卡中复制安全策略；RemLocal 安全层保持最高优先级。
+3. 在 `/api/health` 或响应元数据中公开角色卡、记忆和模型版本。
+4. 让 `rem_v2` 同时跑原 `/api/chat` 与 Soul/OpenAI 路径，比较人格、安全和任务底线。
+
+验收：两个入口的底线规则一致，多角色切换不会串人格或记忆。
+
+### P2：决定是否进行 QLoRA
+
+1. 先实现 `max_steps=2` 训练入口、显存保护、日志和检查点恢复，并仅做流水线试跑。
+2. 将独立、合规、人工复核的训练场景扩充到至少 300 条。
+3. 保证固定评测集不进入训练数据，按 `group_id` 防止跨集合泄漏。
+4. 预先定义人格人工评分与安全无回归门槛，再比较基础模型、提示词版本和 QLoRA。
+5. 只有达到门槛才合并适配器、转换 GGUF 并替换部署模型。
+
+### P3：最后接入语音与 AI Cover
+
+1. 先确定 ASR、TTS、RVC 的许可证、显存和延迟预算。
+2. 逐个加载组件并测量显存，避免与 7B 模型同时挤占 8GB 显存。
+3. 保留文本降级路径，语音失败不能阻塞聊天。
+4. AI Cover 使用独立作业队列，不与实时聊天 RVC 混为一条同步流水线。
+
+## 接手人第一天建议
+
+1. 阅读 `README.md` 和 `docs/soul-of-waifu-integration-roadmap.md`。
+2. 确认分支为 `feature/local-llm`，执行 `git pull --ff-only`。
+3. 启动 8080、8000，运行 53 项单元测试和温度 0 的 `rem_v2` 评测。
+4. 启动 Soul GUI，只做一次纯文本多轮与安全路由冒烟测试。
+5. 从 P0 的“上下文裁剪策略”开始实现，完成并验收后再进入取消生成。
+
+## 关键文档
+
+- 运行说明：`README.md`
+- 总体路线：`docs/soul-of-waifu-integration-roadmap.md`
+- 当前评测基线：`docs/persona-introduction-v1-evaluation-2026-10-11.md`
+- 训练数据规范：`data/training/README.md`
+- 基础权重记录：`docs/training-base-download-v1-2026-10-11.md`
+- QLoRA 环境：`docs/qlora-environment-v1-2026-10-11.md`
+- QLoRA 准备方案：`docs/qlora-preparation-v1-2026-10-11.md`
+
+## 禁止事项
+
+- 不要强推 `feature/local-llm`。
+- 不要提交 GGUF、safetensors、训练拆分、缓存、日志或本地凭据。
+- 不要让 Soul 绕过 RemLocal 直连 llama.cpp。
+- 不要在文本链路未保持稳定时同时加载完整语音模型。
+- 不要用 0.7 温度的随机结果与温度 0 的固定基线直接比较。
+- 不要在 24 条种子样本上宣称完成正式人格微调。
